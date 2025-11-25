@@ -1,5 +1,5 @@
 """SQLAlchemy models for the reward dashboard."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -19,7 +19,7 @@ class User(Base):
     email = Column(String(100), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     is_admin = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     votes = relationship("Vote", back_populates="user", cascade="all, delete-orphan")
@@ -36,8 +36,8 @@ class Colleague(Base):
     position = Column(String(100))
     bio = Column(String(500))
     avatar_url = Column(String(255))
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     badges = relationship("Badge", back_populates="colleague", cascade="all, delete-orphan")
@@ -54,7 +54,7 @@ class Badge(Base):
     description = Column(String(500))
     icon = Column(String(50))  # emoji or icon name
     awarded_by = Column(Integer, ForeignKey("users.id"), nullable=False)
-    awarded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    awarded_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     month = Column(Integer, nullable=False)  # 1-12
     year = Column(Integer, nullable=False)
     
@@ -75,7 +75,7 @@ class Vote(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     badge_id = Column(Integer, ForeignKey("badges.id"), nullable=False)
     vote_type = Column(String(10), nullable=False)  # "up" or "down"
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     user = relationship("User", back_populates="votes")
