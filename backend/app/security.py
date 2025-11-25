@@ -6,6 +6,7 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+from .database import get_db
 
 # Security configuration
 SECRET_KEY = "your-secret-key-change-in-production"  # TODO: Move to environment variable
@@ -47,10 +48,9 @@ def decode_access_token(token: str) -> Optional[dict]:
         return None
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = None):
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     """Get the current authenticated user from the JWT token."""
     from .models import User
-    from .database import get_db
     
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -66,10 +66,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = No
     if username is None:
         raise credentials_exception
     
-    # Get database session if not provided
-    if db is None:
-        db = next(get_db())
-    
     user = db.query(User).filter(User.username == username).first()
     if user is None:
         raise credentials_exception
@@ -77,7 +73,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = No
     return user
 
 
-async def get_current_admin_user(current_user = Depends(get_current_user)):
+def get_current_admin_user(current_user = Depends(get_current_user)):
     """Verify that the current user is an admin."""
     if not current_user.is_admin:
         raise HTTPException(
@@ -85,3 +81,5 @@ async def get_current_admin_user(current_user = Depends(get_current_user)):
             detail="Not enough permissions"
         )
     return current_user
+
+
